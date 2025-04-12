@@ -1,8 +1,6 @@
 # WebsiteSQL Database
 
-The database component for the WebsiteSQL framework. This package provides a simple and elegant wrapper around the Medoo database library with added migration functionality.
-
-> **Note:** This package is under active development and is not yet stable. Tests and documentation are still being written and may not be complete.
+A powerful database wrapper library built on top of [Medoo](https://medoo.in/), providing a simple and intuitive interface for database operations in PHP applications.
 
 ## Installation
 
@@ -12,94 +10,143 @@ composer require websitesql/database
 
 ## Basic Usage
 
-### Configuration
+### Initialization
 
 ```php
-use WebsiteSQL\Database\Database;
+use PoweredApps\Api\Providers\DatabaseProvider;
 
-$db = new Database([
-    'type' => 'mysql',
-    'host' => 'localhost',
-    'database' => 'database_name',
-    'username' => 'username',
-    'password' => 'password',
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'port' => 3306,
-    'prefix' => '',
+// Initialize the database provider
+$db = new DatabaseProvider(
+    'mysql',           // database driver
+    'localhost',       // host
+    'database_name',   // database name
+    'username',        // username
+    'password',        // password
+    'path/to/migrations' // migrations directory path
+);
+```
+
+### CRUD Operations
+
+#### Select Data
+
+```php
+// Select all records from users table
+$users = $db->select("users", "*");
+
+// Select with conditions
+$user = $db->get("users", "*", ["id" => 1]);
+
+// Select with JOIN
+$data = $db->select("posts", [
+    "[>]users" => ["user_id" => "id"]
+], [
+    "posts.id",
+    "posts.title",
+    "users.username"
+], [
+    "posts.status" => "published",
+    "ORDER" => ["posts.created" => "DESC"]
 ]);
 ```
 
-### Querying
+#### Insert Data
 
 ```php
-// Select all users
-$users = $db->select('users', '*');
-
-// Select a single user
-$user = $db->get('users', '*', ['id' => 1]);
-
-// Insert a new user
-$userId = $db->insert('users', [
-    'name' => 'John Doe',
-    'email' => 'john@example.com',
+$db->insert("users", [
+    "username" => "john_doe",
+    "email" => "john@example.com",
+    "created" => date("Y-m-d H:i:s")
 ]);
 
-// Update a user
-$db->update('users', [
-    'name' => 'Jane Doe',
-], ['id' => 1]);
+// Get last inserted ID
+$lastId = $db->id();
+```
 
-// Delete a user
-$db->delete('users', ['id' => 1]);
+#### Update Data
+
+```php
+$db->update("users", [
+    "email" => "new_email@example.com"
+], [
+    "id" => 1
+]);
+```
+
+#### Delete Data
+
+```php
+$db->delete("users", [
+    "id" => 1
+]);
 ```
 
 ### Migrations
 
-Create a migration file in your migrations directory:
+The database library includes a migration system for managing database schema changes:
 
 ```php
-<?php
-
-use WebsiteSQL\Database\Migration\Migration;
-
-class CreateUsersTable extends Migration
-{
-    public function up(): void
-    {
-        $this->schema->create('users', function ($table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->timestamp('created_at')->default('CURRENT_TIMESTAMP');
-            $table->timestamp('updated_at')->default('CURRENT_TIMESTAMP');
-        });
-    }
-
-    public function down(): void
-    {
-        $this->schema->drop('users');
-    }
-}
-```
-
-Run migrations:
-
-```php
-// Run all pending migrations
-$db->migrate('/path/to/migrations');
+// Run migrations
+$db->migrations()->up();
 
 // Rollback the last batch of migrations
-$db->rollback('/path/to/migrations');
+$db->migrations()->down();
 
-// Reset all migrations
-$db->reset('/path/to/migrations');
+// Rollback all migrations
+$db->migrations()->reset();
 
-// Refresh all migrations (reset and re-run)
-$db->refresh('/path/to/migrations');
+// Refresh migrations (rollback all and run again)
+$db->migrations()->refresh();
 ```
+
+## API Reference
+
+### Base Operations
+
+- `query(string $statement, array $map = [])`: Execute raw SQL queries
+- `exec(string $statement)`: Execute raw statement
+- `create(string $table, array $columns, array $options = null)`: Create a table
+- `drop(string $table)`: Drop a table
+- `select(string $table, array $join, array|string $columns = null, array $where = null)`: Select data
+- `get(string $table, array $join, array|string $columns = null, array $where = null)`: Get a single record
+- `insert(string $table, array $values, string $primaryKey = null)`: Insert data
+- `update(string $table, array $data, array $where = null)`: Update data
+- `delete(string $table, array $where = null)`: Delete data
+- `replace(string $table, array $columns, array $where = null)`: Replace data
+
+### Aggregation
+
+- `count(string $table, array $join = null, string $column = null, array $where = null)`: Count rows
+- `avg(string $table, array $join, string $column = null, array $where = null)`: Calculate average
+- `max(string $table, array $join, string $column = null, array $where = null)`: Get maximum value
+- `min(string $table, array $join, string $column = null, array $where = null)`: Get minimum value
+- `sum(string $table, array $join, string $column = null, array $where = null)`: Calculate sum
+
+### Transactions
+
+- `action(callable $actions)`: Execute callback in transaction
+- `beginTransaction()`: Begin a transaction
+- `commit()`: Commit a transaction
+- `rollBack()`: Rollback a transaction
+
+### Utilities
+
+- `id(?string $name = null)`: Get last inserted ID
+- `pdo()`: Get PDO instance
+- `debug()`: Get the last query for debugging
+- `log()`: Get query log
+- `info()`: Get database connection info
+- `error()`: Get error information
+- `rand(string $table, array $join = null, array|string $columns = null, array $where = null)`: Get random records
+- `has(string $table, array $join, array $where = null)`: Check if records exist
+
+### Migrations
+
+- `migrations()->up()`: Run pending migrations
+- `migrations()->down()`: Rollback the last batch of migrations
+- `migrations()->reset()`: Rollback all migrations
+- `migrations()->refresh()`: Rollback all and run again
 
 ## License
 
-The WebsiteSQL Database package is open-sourced software licensed under the [MIT license](LICENSE).
+MIT

@@ -1,124 +1,48 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace WebsiteSQL\Database;
 
+use WebsiteSQL\Database\Providers\MigrationProvider;
 use Medoo\Medoo;
-use WebsiteSQL\Database\Migration\MigrationRepository;
-use WebsiteSQL\Database\Migration\Migrator;
-use WebsiteSQL\Database\Traits\HasQueryBuilder;
+use Exception;
 
-class Database
+class Database extends Medoo
 {
-    use HasQueryBuilder;
+    /**
+     * This string will hold the path to the Migrations directory
+     *
+     * @var string
+     */
+    private string $migrationsPath;
 
     /**
-     * The Medoo instance.
+     * Constructor
      *
-     * @var Medoo
+     * @param array $options
+     * @param string $migrationsPath
+     * @return void
+     * @throws Exception
      */
-    protected Medoo $medoo;
-
-    /**
-     * The migration repository instance.
-     *
-     * @var MigrationRepository
-     */
-    protected MigrationRepository $migrationRepository;
-
-    /**
-     * The migrator instance.
-     *
-     * @var Migrator
-     */
-    protected Migrator $migrator;
-
-    /**
-     * Create a new database instance.
-     *
-     * @param array $config
-     */
-    public function __construct(array $config)
+    public function __construct(array $options, string $migrationsPath)
     {
-        $this->medoo = new Medoo($config);
-        $this->migrationRepository = new MigrationRepository($this);
-        $this->migrator = new Migrator($this->migrationRepository, $this);
+        // Connect to database using parent constructor
+        try {
+            parent::__construct($options);
+        } catch (Exception $error) {
+            throw new Exception('Database connection error: ' . $error->getMessage());
+        }
+
+        // Set the migrations path
+        $this->migrationsPath = $migrationsPath;
     }
 
     /**
-     * Get the Medoo instance.
-     *
-     * @return Medoo
+     * Get the MigrationProvider class
+     * 
+     * @return MigrationProvider
      */
-    public function getMedoo(): Medoo
+    public function migrations(): MigrationProvider
     {
-        return $this->medoo;
-    }
-
-    /**
-     * Get the migrator instance.
-     *
-     * @return Migrator
-     */
-    public function getMigrator(): Migrator
-    {
-        return $this->migrator;
-    }
-
-    /**
-     * Run database migrations.
-     *
-     * @param string $path
-     * @return array
-     */
-    public function migrate(string $path): array
-    {
-        return $this->migrator->run($path);
-    }
-
-    /**
-     * Rollback the last database migration.
-     *
-     * @param string $path
-     * @param int $steps
-     * @return array
-     */
-    public function rollback(string $path, int $steps = 1): array
-    {
-        return $this->migrator->rollback($path, $steps);
-    }
-
-    /**
-     * Reset all migrations.
-     *
-     * @param string $path
-     * @return array
-     */
-    public function reset(string $path): array
-    {
-        return $this->migrator->reset($path);
-    }
-
-    /**
-     * Refresh all migrations.
-     *
-     * @param string $path
-     * @return array
-     */
-    public function refresh(string $path): array
-    {
-        $this->reset($path);
-        return $this->migrate($path);
-    }
-
-    /**
-     * Proxy method calls to Medoo.
-     *
-     * @param string $method
-     * @param array $arguments
-     * @return mixed
-     */
-    public function __call(string $method, array $arguments)
-    {
-        return $this->medoo->$method(...$arguments);
+        return new MigrationProvider($this, $this->migrationsPath);
     }
 }
