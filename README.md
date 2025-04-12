@@ -14,14 +14,13 @@ composer require websitesql/database
 
 ```php
 // Initialize the database provider
-$db = new WebsiteSQL\Database\Database(
-    'mysql',           // database driver
-    'localhost',       // host
-    'database_name',   // database name
-    'username',        // username
-    'password',        // password
-    'path/to/migrations' // migrations directory path
-);
+$db = new WebsiteSQL\Database\Database([
+    'type' => 'mysql',
+    'host' => 'localhost',
+    'database' => 'name',
+    'username' => 'your_username',
+    'password' => 'your_password'
+], '../migrations');
 ```
 
 ### CRUD Operations
