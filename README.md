@@ -13,10 +13,8 @@ composer require websitesql/database
 ### Initialization
 
 ```php
-use PoweredApps\Api\Providers\DatabaseProvider;
-
 // Initialize the database provider
-$db = new DatabaseProvider(
+$db = new WebsiteSQL\Database\Database(
     'mysql',           // database driver
     'localhost',       // host
     'database_name',   // database name
